@@ -1,4 +1,4 @@
-const file = Bun.file("./test.txt");
+const file = Bun.file("./input.txt");
 const text = await file.text();
 const lines = text.split("\n");
 
@@ -12,27 +12,29 @@ type Data = {
 const numbers: Data[] = [];
 const symbols: Data[] = [];
 
+function populateDataArrays(lineIndex: number, matches: RegExpMatchArray[], array: Data[]) {
+  matches.forEach((match) => {
+    const matchValue = match[0]  
+    const index = match.index ?? 0
+    array.push({
+      lineIndex,
+      value: matchValue,
+      startIndex: index,
+      endIndex: index + matchValue.length - 1,
+    });
+  });
+}
+
 lines.forEach((line, lineIndex) => {
   const num = /\d+/g;
-  line.match(num)?.forEach((match) => {
-    numbers.push({
-      lineIndex,
-      value: match,
-      startIndex: line.indexOf(match),
-      endIndex: line.indexOf(match) + match.length - 1,
-    });
-  });
+  const numMatches = [...line.matchAll(num)]
+  populateDataArrays(lineIndex, numMatches, numbers)
+
   const symbol = /[^a-zA-Z0-9.]/g;
-  line.match(symbol)?.forEach((match) => {
-    symbols.push({
-      lineIndex,
-      value: match,
-      startIndex: line.indexOf(match),
-      endIndex: line.indexOf(match) + match.length - 1,
-    });
-  });
+  const symbolMatches = [...line.matchAll(symbol)]
+  populateDataArrays(lineIndex, symbolMatches, symbols)
 });
-console.log(numbers, symbols)
+
 let adjacents = 0;
 for (const number of numbers) {
     let hasAdgacent = false
@@ -41,18 +43,14 @@ for (const number of numbers) {
           number.lineIndex == symbol.lineIndex ||
           number.lineIndex + 1 == symbol.lineIndex ||
           number.lineIndex - 1 == symbol.lineIndex;
-        const validColumnIndex =
-          number.endIndex + 1 == symbol.startIndex ||
-          number.startIndex - 1 == symbol.startIndex ||
-          (symbol.startIndex >= number.startIndex && symbol.endIndex <= number.endIndex);
-        console.log(number.value, symbol.value, validLineIndex && validColumnIndex, validLineIndex, number.endIndex + 1 == symbol.startIndex, number.startIndex - 1 == symbol.startIndex, (symbol.startIndex >= number.startIndex && symbol.endIndex <= number.endIndex))
+        const validColumnIndex = symbol.startIndex >= number.startIndex - 1 && symbol.endIndex <= number.endIndex + 1;
+
         if (validLineIndex && validColumnIndex) {
             hasAdgacent = true;
             break
         }
     }
   if (hasAdgacent) {
-        console.log(parseInt(number.value))
       adjacents += parseInt(number.value)
   }
 }
