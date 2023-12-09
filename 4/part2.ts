@@ -1,4 +1,4 @@
-const file = Bun.file("./input.txt");
+const file = Bun.file("./test.txt");
 const text = await file.text();
 const lines = text.split("\n");
 
@@ -15,8 +15,7 @@ function getScoreForWinningCount(count: number) {
   return result
 }
 
-let total = 0
-for (const line of lines) {
+function getScoreForOneCard(line: string) {
   const numbers = line.split(": ")[1]
   const splitNumbers = numbers.split("|")
   const winningNumbers = getNumbersArray(splitNumbers[0])
@@ -25,6 +24,23 @@ for (const line of lines) {
   const intersection = winningNumbers.filter(x => entryNumbers.includes(x));
   const winningCount = intersection.length
   const lineWinningCount = getScoreForWinningCount(winningCount)
-  total += lineWinningCount
+  return [winningCount, lineWinningCount]
 }
-console.log(total)
+
+const cardCount: Record<number, number> = {}
+
+function recursiveLineCount(lines: string[]) {
+  if (lines.length === 0) return
+  lines.forEach((line, lineIndex) => {
+    const [winningCount,] = getScoreForOneCard(line)
+    const copies = [...lines].splice(lineIndex + 1, lineIndex + winningCount)
+    if (winningCount > 0) {
+      cardCount[lineIndex + 1] = cardCount[lineIndex + 1] + 1 ?? 1
+    }
+    recursiveLineCount(copies)
+  })
+}
+
+recursiveLineCount(lines)
+
+console.log(cardCount)
