@@ -1,46 +1,40 @@
-const file = Bun.file("./test.txt");
+const file = Bun.file("./input.txt");
 const text = await file.text();
-const lines = text.split("\n");
+const originalLines = text.split("\n");
 
 function getNumbersArray(stringNumber: string) {
   return stringNumber.trim().split(" ").map((strNb) => parseInt(strNb)).filter((number) => !isNaN(number))
 }
 
-function getScoreForWinningCount(count: number) {
-  if (count <= 1) return count
-  let result = 1
-  for (let i = 1; i < count; i++) {
-    result = result * 2
-  }
-  return result
-}
-
 function getScoreForOneCard(line: string) {
-  const numbers = line.split(": ")[1]
+  const lineSplit = line.split(": ")
+  const cardNumber = parseInt(lineSplit[0].replaceAll("Card ", ""))
+  const numbers = lineSplit[1]
   const splitNumbers = numbers.split("|")
   const winningNumbers = getNumbersArray(splitNumbers[0])
   const entryNumbers = getNumbersArray(splitNumbers[1])
   
   const intersection = winningNumbers.filter(x => entryNumbers.includes(x));
   const winningCount = intersection.length
-  const lineWinningCount = getScoreForWinningCount(winningCount)
-  return [winningCount, lineWinningCount]
+  return {
+    cardNumber,
+    winningCount
+  }
 }
 
 const cardCount: Record<number, number> = {}
 
 function recursiveLineCount(lines: string[]) {
   if (lines.length === 0) return
-  lines.forEach((line, lineIndex) => {
-    const [winningCount,] = getScoreForOneCard(line)
-    const copies = [...lines].splice(lineIndex + 1, lineIndex + winningCount)
-    if (winningCount > 0) {
-      cardCount[lineIndex + 1] = cardCount[lineIndex + 1] + 1 ?? 1
-    }
+  lines.forEach((line) => {
+    const {cardNumber, winningCount} = getScoreForOneCard(line)
+    cardCount[cardNumber] = cardCount[cardNumber] ? cardCount[cardNumber] + 1 : 1
+    
+    const copies = [...originalLines].slice(cardNumber, cardNumber + winningCount)
     recursiveLineCount(copies)
   })
 }
 
-recursiveLineCount(lines)
+recursiveLineCount(originalLines)
 
-console.log(cardCount)
+console.log(Object.values(cardCount).reduce((a, b) => a + b, 0))
